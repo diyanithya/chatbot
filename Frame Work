@@ -1,0 +1,86 @@
+from collections import deque
+
+def process_statement_basic(x):
+    if x[0] == "/":
+        cont, response = process_command(x[1:])
+    else:
+        response = ["OK."]
+        cont = True
+    return cont, response
+
+
+def process_command(x):
+    parts = x.split()
+    cmd = parts[0]
+    args = parts[1:]
+    
+    
+    global context
+    if cmd == "quit":
+        return False, ["Goodbye!"]
+    elif cmd == "clearcontext":
+        context.clear()
+        return True, ["Cleared context."]
+    elif cmd == "printcontext":
+        response = context.get()
+        response.append("Context length: %d" % (len(context)))
+        return True, response
+    elif cmd == "resizecontext":
+        if len(args) == 1:
+            
+            try:
+                context.resize(int(args[0]))
+                return True, ["Resized context to %s" % (args[0])]
+            except TypeError:
+                return True, ["Context size should be int"]
+        else:
+            return True, ["resizecontext requires new size (int)"]
+    else:
+        return True, ["Invalid Command"]
+
+class Context:
+    
+    def __init__(self, N):
+        self.N = N
+        self.context = None
+        self.init()
+    
+    def __len__(self):
+        return self.N
+    
+    def init(self):
+        if self.context is None:
+            self.context = deque(list(), self.N)
+        else:
+            self.context = deque(list(self.context), self.N)
+        
+    def add(self, x, response, cont, **kwargs):
+        self.context.append({"x": x, "response": response, "cont": cont, 'tags': kwargs})
+        
+    def clear(self):
+        self.context = None
+        self.init()
+    
+    def resize(self, N):
+        self.N = N
+        self.init()
+
+    def get(self):
+        return list(self.context)
+        
+context = None
+
+def start_chatbot(N = 10, name = 'Poincare'):
+    global context
+    context = Context(N)
+    
+    cont = True
+    chat_cnt = 0
+    
+    while cont:
+        x = input("You>> ")
+        cont, response = process_statement_basic(x)
+        for r in response:
+            print("[", chat_cnt, "]", name, ">> ", r)
+        context.add(x, response ,cont)
+        chat_cnt += 1
